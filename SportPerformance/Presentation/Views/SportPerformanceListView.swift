@@ -20,6 +20,7 @@ struct SportPerformanceListView: View {
 private struct SportPerformanceListContentView: View {
     @StateObject var viewModel: SportPerformanceListViewModel
     @State private var isPresentingAddView = false
+    @Environment(\.scenePhase) private var scenePhase
 
     private func listItemView(_ performance: SportPerformance) -> some View {
         return VStack(alignment: .leading, spacing: 10) {
@@ -94,9 +95,17 @@ private struct SportPerformanceListContentView: View {
                 }
             }
             .task { await viewModel.loadPerformances() }
+            .onChange(of: scenePhase) { oldPhase, newPhase in
+                if newPhase == .active {
+                    Task { await viewModel.loadPerformances() }
+                }
+            }
             .sheet(
                 isPresented: $isPresentingAddView,
-                onDismiss: { Task { await viewModel.loadPerformances()} }
+                onDismiss: {
+                    viewModel.filter = .all
+                    Task { await viewModel.loadPerformances() }
+                }
             ) {
                 NavigationView { AddSportPerformanceView() }
             }
